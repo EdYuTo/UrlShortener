@@ -23,6 +23,7 @@ platform :ios do
   * open: true - Open the project after generation"
   lane :generate_project do |options|
     clean_project
+    generate_network_module
     Dir.chdir('..') do
       message('Generating Xcode project')
       sh 'bundle exec Scripts/xcodegen'
@@ -34,7 +35,16 @@ platform :ios do
   desc 'Opens the project'
   lane :open_project do
     Dir.chdir('..') do
+      sleep 2 # Wait for the project to be fully written to disk
       sh "open #{project_name}.xcodeproj"
+    end
+  end
+
+  desc 'Generates Network module'
+  lane :generate_network_module do
+    Dir.chdir('../Modules/Network') do
+      message('Generating Network module')
+      sh 'bundle exec ../../Scripts/xcodegen'
     end
   end
 
@@ -93,7 +103,8 @@ platform :ios do
   lane :clean_project do
     Dir.chdir('..') do
       message('Removing auto generated files')
-      sh "rm -rf #{project_name}.xcodeproj"
+      sh "find . -maxdepth 3 -type d -name '*.xcodeproj' -exec rm -rf {} +"
+      sh "find . -maxdepth 3 -type d -name 'DerivedData' -exec rm -rf {} +"
       sh 'rm -rf DerivedData build build_data'
       sh 'rm -rf TestResults TestResults.xcresult'
     end

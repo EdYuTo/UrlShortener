@@ -34,6 +34,14 @@ Generates the project
 
 Opens the project
 
+### ios generate_network_module
+
+```sh
+[bundle exec] fastlane ios generate_network_module
+```
+
+Generates Network module
+
 ### ios test_project
 
 ```sh
