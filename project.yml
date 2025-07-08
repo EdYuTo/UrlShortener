@@ -40,6 +40,8 @@ settings:
       SWIFT_COMPILATION_MODE: wholemodule
 
 projectReferences:
+  Logger:
+    path: Modules/Logger/DebugLogger.xcodeproj
   Network:
     path: Modules/Network/Network.xcodeproj
 
@@ -49,6 +51,7 @@ targets:
     platform: iOS
     sources: [UrlShortener]
     dependencies:
+      - target: Logger/DebugLoggerProvider
       - target: Network/NetworkProvider
     postBuildScripts:
       - script: chmod +x ./Scripts/lint-checker
