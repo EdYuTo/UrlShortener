@@ -40,6 +40,8 @@ settings:
       SWIFT_COMPILATION_MODE: wholemodule
 
 projectReferences:
+  Cache:
+    path: Modules/Cache/Cache.xcodeproj
   Logger:
     path: Modules/Logger/DebugLogger.xcodeproj
   Network:
@@ -51,6 +53,7 @@ targets:
     platform: iOS
     sources: [UrlShortener]
     dependencies:
+      - target: Cache/CacheProvider
       - target: Logger/DebugLoggerProvider
       - target: Network/NetworkProvider
     postBuildScripts:
@@ -99,16 +102,20 @@ schemes:
         UrlShortener: all
         UrlShortenerTests: [test]
         UrlShortenerUITests: [test]
+        Cache/CacheProvider: [test]
         Network/NetworkProvider: [test]
     test:
       gatherCoverageData: YES
       coverageTargets:
         - UrlShortener
+        - Cache/CacheProvider
         - Network/NetworkProvider
       targets:
         - name: UrlShortenerTests
           paralelizable: true
         - name: UrlShortenerUITests
+          paralelizable: true
+        - name: Cache/CacheProviderTests
           paralelizable: true
         - name: Network/NetworkProviderTests
           paralelizable: true

@@ -23,6 +23,7 @@ platform :ios do
   * open: true - Open the project after generation"
   lane :generate_project do |options|
     clean_project
+    generate_cache_module
     generate_logger_module
     generate_network_module
     Dir.chdir('..') do
@@ -38,6 +39,14 @@ platform :ios do
     Dir.chdir('..') do
       sleep 2 # Wait for the project to be fully written to disk
       sh "open #{project_name}.xcodeproj"
+    end
+  end
+
+  desc 'Generates Cache module'
+  lane :generate_cache_module do
+    Dir.chdir('../Modules/Cache') do
+      message('Generating Cache module')
+      sh 'bundle exec ../../Scripts/xcodegen'
     end
   end
 
