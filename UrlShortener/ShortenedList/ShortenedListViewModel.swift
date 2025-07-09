@@ -53,6 +53,7 @@ extension ShortenedListViewModel: ShortenedListViewModelProtocol {
                 // Ideally we could use a NSOrderedSet for bigger datasets
                 insertUnique(mapRemoteToDomain(response.content))
                 clipUrlListToHistoryLimitCount()
+                await self.saveUrlListToCache()
                 await self.updateOnMainThread(.success)
             } catch {
                 if let error = error as? NetworkError, case .connection = error {
@@ -67,8 +68,12 @@ extension ShortenedListViewModel: ShortenedListViewModelProtocol {
     @discardableResult
     func loadHistory() -> Task<Void, Never> {
         Task {
-            let history: String? = try? await cacheProvider.get(key: "")
-            sortUrlList()
+            if let history: [ShortenedUrlStorage] = try? await cacheProvider.get(key: ShortenedUrlStorage.key) {
+                urlList = history.map { mapCacheToDomain($0) }
+                sortUrlList()
+                clipUrlListToHistoryLimitCount()
+                await self.updateOnMainThread(.success)
+            }
         }
     }
 }
@@ -91,6 +96,24 @@ private extension ShortenedListViewModel {
         )
     }
 
+    func mapDomainToCache(_ domain: ShortenedUrlModel) -> ShortenedUrlStorage {
+        ShortenedUrlStorage(
+            id: domain.id,
+            original: domain.original,
+            shortened: domain.shortened,
+            date: domain.date
+        )
+    }
+
+    func mapCacheToDomain(_ cache: ShortenedUrlStorage) -> ShortenedUrlModel {
+        ShortenedUrlModel(
+            id: cache.id,
+            original: cache.original,
+            shortened: cache.shortened,
+            date: cache.date
+        )
+    }
+
     func insertUnique(_ model: ShortenedUrlModel) {
         urlList = urlList.filter { $0.id != model.id }
         urlList.insert(model, at: 0)
@@ -101,8 +124,13 @@ private extension ShortenedListViewModel {
     }
 
     func clipUrlListToHistoryLimitCount() {
-        if urlList.count > historyLimitCount {
+        while urlList.count > historyLimitCount {
             _ = urlList.popLast()
         }
+    }
+
+    func saveUrlListToCache() async {
+        let cacheList = urlList.map { mapDomainToCache($0) }
+        try? await cacheProvider.set(key: ShortenedUrlStorage.key, value: cacheList)
     }
 }

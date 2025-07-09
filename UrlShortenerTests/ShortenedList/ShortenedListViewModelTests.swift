@@ -11,6 +11,7 @@ import NetworkProvider
 import XCTest
 
 final class ShortenedListViewModelTests: XCTestCase {
+    // MARK: - Remote
     func testShortenUrlRequest() async {
         let url = "https://www.linkedin.com/in/edyuto/"
         let response = makeResponse(url)
@@ -131,6 +132,88 @@ final class ShortenedListViewModelTests: XCTestCase {
 
         XCTAssertEqual(sut.urlList.count, limitCount)
     }
+
+    // MARK: - Cache
+    func testCacheShouldFetchWithCorrectKey() async {
+        let (sut, cacheProvider, _) = makeSut()
+
+        await sut.loadHistory().value
+
+        XCTAssertEqual(cacheProvider.operationList, [.get("ShortenedUrlHistory")])
+    }
+
+    func testEmptyCacheShouldYieldEmptyData() async {
+        let (sut, cacheProvider, _) = makeSut()
+
+        cacheProvider.add(.success([ShortenedUrlStorage]()))
+        await sut.loadHistory().value
+
+        XCTAssertEqual(sut.urlList.count, 0)
+    }
+
+    func testNilCacheShouldYieldEmptyData() async {
+        let (sut, _, _) = makeSut()
+
+        await sut.loadHistory().value
+
+        XCTAssertEqual(sut.urlList.count, 0)
+    }
+
+    func testCacheShouldYieldDomainModel() async {
+        let cacheModel = makeCacheModel()
+        let (sut, cacheProvider, _) = makeSut()
+
+        cacheProvider.add(.success([cacheModel]))
+        await sut.loadHistory().value
+
+        XCTAssertEqual(sut.urlList.count, 1)
+
+        let model = sut.urlList.first!
+        XCTAssertEqual(model.id, cacheModel.id)
+        XCTAssertEqual(model.original, cacheModel.original)
+        XCTAssertEqual(model.shortened, cacheModel.shortened)
+        XCTAssertLessThan(model.date.timeIntervalSince(cacheModel.date), 1)
+    }
+
+    func testCacheSucceedsAndAppendRespectsLimits() async {
+        let limitCount = 2
+        let cacheList = (0...5).map { _ in makeCacheModel() }
+
+        let (sut, cacheProvider, _) = makeSut(historyLimitCount: limitCount)
+
+        cacheProvider.add(.success(cacheList))
+        await sut.loadHistory().value
+
+        XCTAssertEqual(sut.urlList.count, limitCount)
+    }
+
+    // MARK: - Remote & cache
+    func testShortenUrlRequestShouldSaveOnCacheWhenSucceeds() async {
+        let url = "https://www.linkedin.com/in/edyuto/"
+        let response = makeResponse(url)
+        let (sut, cacheProvider, networkProvider) = makeSut()
+        
+        networkProvider.add(.success(response))
+
+        sut.onUpdate = { state in
+            if state != .success {
+                XCTFail("Should yield success")
+            }
+        }
+
+        await sut.shorten(url).value
+
+        if case let .set(key as String, cacheModelList as [ShortenedUrlStorage]) = cacheProvider.operationList.first,
+           let cacheModel = cacheModelList.first {
+            XCTAssertEqual(cacheModel.id, response.content.alias)
+            XCTAssertEqual(cacheModel.original, response.content.links.original)
+            XCTAssertEqual(cacheModel.shortened, response.content.links.shortened)
+            XCTAssertLessThan(Date().timeIntervalSince(cacheModel.date), 1)
+            XCTAssertEqual(key, "ShortenedUrlHistory")
+        } else {
+            XCTFail("Should've saved remote model to cache")
+        }
+    }
 }
 
 // MARK: - Helpers
@@ -164,6 +247,18 @@ private extension ShortenedListViewModelTests {
                     shortened: "https://url-shortener-server.onrender.com/api/alias/1544093959"
                 )
             )
+        )
+    }
+
+    func makeCacheModel(
+        _ url: String = "https://www.linkedin.com/in/edyuto/",
+        shortenedId: UUID = UUID()
+    ) -> ShortenedUrlStorage {
+        ShortenedUrlStorage(
+            id: shortenedId.uuidString,
+            original: url,
+            shortened: "https://url-shortener-server.onrender.com/api/alias/1544093959",
+            date: Date()
         )
     }
 }
