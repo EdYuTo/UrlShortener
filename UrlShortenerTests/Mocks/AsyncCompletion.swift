@@ -5,12 +5,14 @@
 //  Created by Edson Yudi Toma on 08/07/25.
 //
 
+import Foundation
+
 class AsyncCompletion {
     private var completionList = [Result<Any, Error>]()
 
     func complete<T>(with type: T.Type) async throws -> T {
         guard completionList.count > 0 else {
-            fatalError("Add a completion result first")
+            throw NSError(domain: "Add a completion result first", code: 404)
         }
         switch completionList.removeFirst() {
         case let .success(value):
