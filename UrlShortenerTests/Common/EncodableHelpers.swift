@@ -7,57 +7,13 @@
 
 import XCTest
 
-enum EncodableHelpers {
-    static func assertEqual<T: Encodable>(
-        _ lhs: Data?,
-        _ rhs: T,
-        file: StaticString = #file,
-        line: UInt = #line
-    ) {
-        do {
-            let rhs: Data? = try JSONEncoder().encode(rhs)
+// MARK: - Namespace
+enum EncodableHelpers {}
 
-            assertEqual(lhs, rhs, file: file, line: line)
-        } catch {
-            XCTFail("\(error.localizedDescription)", file: file, line: line)
-        }
-    }
-
-    static func assertEqual<T: Encodable>(
-        _ lhs: T,
-        _ rhs: Data?,
-        file: StaticString = #file,
-        line: UInt = #line
-    ) {
-        do {
-            let lhs: Data? = try JSONEncoder().encode(lhs)
-
-            assertEqual(lhs, rhs, file: file, line: line)
-        } catch {
-            XCTFail("\(error.localizedDescription)", file: file, line: line)
-        }
-    }
-
-    static func assertEqual(
-        _ lhs: Data?,
-        _ rhs: Data?,
-        file: StaticString = #file,
-        line: UInt = #line
-    ) {
-        switch (lhs, rhs) {
-        case (.none, .none):
-            break
-        case let (.some(lhsData), .some(rhsData)):
-            do {
-                let lhs = try toDictionary(lhsData)
-                let rhs = try toDictionary(rhsData)
-                try validateKeys(lhs, rhs)
-            } catch {
-                XCTFail("\(error.localizedDescription)", file: file, line: line)
-            }
-        default:
-            XCTFail("One of the values is nil", file: file, line: line)
-        }
+// MARK: - Conversions
+extension EncodableHelpers {
+    static func toData<T: Encodable>(_ encodable: T) throws -> Data {
+        try JSONEncoder().encode(encodable)
     }
 
     static func toDictionary(_ data: Data) throws -> NSDictionary {
@@ -66,6 +22,100 @@ enum EncodableHelpers {
             return data
         }
         throw HelperError(errorDescription: "Invalid JSON format")
+    }
+}
+
+// MARK: Equality
+extension EncodableHelpers {
+    static func isEqual<T: Encodable, U: Encodable>(
+        _ lhs: T,
+        _ rhs: U
+    ) throws -> Bool {
+        try isEqual(try toData(lhs), try toData(rhs))
+    }
+
+    static func isEqual<T: Encodable>(
+        _ lhs: Data?,
+        _ rhs: T
+    ) throws -> Bool {
+        try isEqual(lhs, toData(rhs))
+    }
+
+    static func isEqual<T: Encodable>(
+        _ lhs: T,
+        _ rhs: Data?,
+    ) throws -> Bool {
+        try isEqual(toData(lhs), rhs)
+    }
+
+    static func isEqual(
+        _ lhs: Data?,
+        _ rhs: Data?
+    ) throws -> Bool {
+        switch (lhs, rhs) {
+        case (.none, .none):
+            return true
+        case let (.some(lhsData), .some(rhsData)):
+            let lhs = try toDictionary(lhsData)
+            let rhs = try toDictionary(rhsData)
+            try validateKeys(lhs, rhs)
+            return true
+        default:
+            return false
+        }
+    }
+}
+
+// MARK: - Assertions
+extension EncodableHelpers {
+    static func assertEqual<T: Encodable, U: Encodable>(
+        _ lhs: T,
+        _ rhs: U,
+        file: StaticString = #file,
+        line: UInt = #line
+    ) {
+        assertEqual(try isEqual(lhs, rhs), file: file, line: line)
+    }
+
+    static func assertEqual<T: Encodable>(
+        _ lhs: Data?,
+        _ rhs: T,
+        file: StaticString = #file,
+        line: UInt = #line
+    ) {
+        assertEqual(try isEqual(lhs, rhs), file: file, line: line)
+    }
+
+    static func assertEqual<T: Encodable>(
+        _ lhs: T,
+        _ rhs: Data?,
+        file: StaticString = #file,
+        line: UInt = #line
+    ) {
+        assertEqual(try isEqual(lhs, rhs), file: file, line: line)
+    }
+
+    static func assertEqual(
+        _ lhs: Data?,
+        _ rhs: Data?,
+        file: StaticString = #file,
+        line: UInt = #line
+    ) {
+        assertEqual(try isEqual(lhs, rhs), file: file, line: line)
+    }
+
+    static func assertEqual(
+        _ expression: @autoclosure () throws -> Bool,
+        file: StaticString,
+        line: UInt
+    ) {
+        do {
+            guard try expression() else {
+                return XCTFail("One of the values is nil", file: file, line: line)
+            }
+        } catch {
+            XCTFail("\(error.localizedDescription)", file: file, line: line)
+        }
     }
 }
 
