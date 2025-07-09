@@ -1,0 +1,116 @@
+//
+//  ShortenedListViewModelTests.swift
+//  UrlShortener
+//
+//  Created by Edson Yudi Toma on 08/07/25.
+//
+
+@testable
+import UrlShortener
+import NetworkProvider
+import XCTest
+
+final class ShortenedListViewModelTests: XCTestCase {
+    func testShortenUrlRequest() async {
+        let url = "https://www.linkedin.com/in/edyuto/"
+        let response = makeResponse(url)
+
+        let (sut, _, networkProvider) = makeSut()
+        networkProvider.add(.success(response))
+
+        await sut.shorten(url).value
+
+        let request = networkProvider.requestList.first!
+        XCTAssertEqual(request.endpoint, "https://url-shortener-server.onrender.com/api/alias")
+        EncodableHelpers.assertEqual(
+            request.body,
+                """
+                   {"url": "\(url)"}
+                """.data(using: .utf8)
+        )
+        XCTAssertEqual(request.httpMethod, .post)
+        XCTAssertNil(request.queryParams)
+        XCTAssertEqual(
+            NSDictionary(dictionary: request.headers!),
+            NSDictionary(dictionary: ["Content-Type": "application/json"])
+        )
+    }
+
+    func testShortenUrlSucceeds() async {
+        let url = "https://www.linkedin.com/in/edyuto/"
+        let response = makeResponse(url)
+
+        let (sut, _, networkProvider) = makeSut()
+        networkProvider.add(.success(response))
+
+        sut.onUpdate = { state in
+            if state != .success {
+                XCTFail("Should yield success")
+            }
+        }
+
+        await sut.shorten(url).value
+    }
+
+    func testShortenUrlFailsWithConnectionError() async {
+        let url = "https://www.linkedin.com/in/edyuto/"
+        let error = NetworkError.connection
+
+        let (sut, _, networkProvider) = makeSut()
+        networkProvider.add(.failure(error))
+
+        sut.onUpdate = { state in
+            if state != .connectionError {
+                XCTFail("Should yield connection error")
+            }
+        }
+
+        await sut.shorten(url).value
+    }
+
+    func testShortenUrlFailsWithGenericError() async {
+        let url = "https://www.linkedin.com/in/edyuto/"
+        let error = NSError(domain: "Generic", code: 500)
+
+        let (sut, _, networkProvider) = makeSut()
+        networkProvider.add(.failure(error))
+
+        sut.onUpdate = { state in
+            if state != .error {
+                XCTFail("Should yield generic error")
+            }
+        }
+
+        await sut.shorten(url).value
+    }
+}
+
+// MARK: - Helpers
+private extension ShortenedListViewModelTests {
+    func makeSut(
+        file: StaticString = #file,
+        line: UInt = #line
+    ) -> (ShortenedListViewModelProtocol, CacheProviderMock, NetworkProviderMock) {
+        let cacheProvider = CacheProviderMock()
+        let networkProvider = NetworkProviderMock()
+        let sut = ShortenedListViewModel(cacheProvider: cacheProvider, networkProvider: networkProvider)
+        trackMemoryLeaks(cacheProvider, file: file, line: line)
+        trackMemoryLeaks(networkProvider, file: file, line: line)
+        trackMemoryLeaks(sut, file: file, line: line)
+        return (sut, cacheProvider, networkProvider)
+    }
+
+    func makeResponse(_ url: String) -> NetworkResponse<ShortenUrlResponse> {
+        .init(
+            statusCode: 201,
+            headers: [:],
+            content: ShortenUrlResponse(
+                alias: "1544093959",
+                links: ShortenUrlLinksResponse(
+                    original: url,
+                    shortened: "https://url-shortener-server.onrender.com/api/alias/1544093959"
+                )
+            )
+        )
+    }
+}
