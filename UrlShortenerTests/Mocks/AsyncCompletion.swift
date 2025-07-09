@@ -1,0 +1,26 @@
+//
+//  AsyncCompletion.swift
+//  UrlShortener
+//
+//  Created by Edson Yudi Toma on 08/07/25.
+//
+
+class AsyncCompletion {
+    private var completionList = [Result<Any, Error>]()
+
+    func complete<T>(with type: T.Type) async throws -> T {
+        guard completionList.count > 0 else {
+            fatalError("Add a completion result first")
+        }
+        switch completionList.removeFirst() {
+        case let .success(value):
+            return value as! T
+        case let .failure(error):
+            throw error
+        }
+    }
+
+    func add(_ completion: Result<Any, Error>) {
+        completionList.append(completion)
+    }
+}
