@@ -6,6 +6,7 @@
 //
 
 import CacheProvider
+import Foundation
 import NetworkProvider
 
 protocol ShortenedListViewModelProtocol: AnyObject {
@@ -18,6 +19,7 @@ protocol ShortenedListViewModelProtocol: AnyObject {
 
     var onUpdate: Observer<ShortenedListState>? { get set }
     var urlList: [ShortenedUrlModel] { get }
+    var historyLimitCount: Int { get }
 }
 
 final class ShortenedListViewModel {
@@ -26,13 +28,16 @@ final class ShortenedListViewModel {
 
     var onUpdate: Observer<ShortenedListState>?
     var urlList: [ShortenedUrlModel] = []
+    var historyLimitCount: Int
 
     init(
         cacheProvider: CacheProviderProtocol,
-        networkProvider: NetworkProviderProtocol
+        networkProvider: NetworkProviderProtocol,
+        historyLimitCount: Int = 10
     ) {
         self.cacheProvider = cacheProvider
         self.networkProvider = networkProvider
+        self.historyLimitCount = historyLimitCount
     }
 }
 
@@ -45,6 +50,9 @@ extension ShortenedListViewModel: ShortenedListViewModelProtocol {
             guard let self else { return }
             do {
                 let response: NetworkResponse<ShortenUrlResponse> = try await networkProvider.makeRequest(request)
+                // Ideally we could use a NSOrderedSet for bigger datasets
+                insertUnique(mapRemoteToDomain(response.content))
+                clipUrlListToHistoryLimitCount()
                 await self.updateOnMainThread(.success)
             } catch {
                 if let error = error as? NetworkError, case .connection = error {
@@ -60,6 +68,7 @@ extension ShortenedListViewModel: ShortenedListViewModelProtocol {
     func loadHistory() -> Task<Void, Never> {
         Task {
             let history: String? = try? await cacheProvider.get(key: "")
+            sortUrlList()
         }
     }
 }
@@ -70,6 +79,30 @@ private extension ShortenedListViewModel {
         await MainActor.run { [weak self] in
             guard let self else { return }
             self.onUpdate?(state)
+        }
+    }
+
+    func mapRemoteToDomain(_ remote: ShortenUrlResponse) -> ShortenedUrlModel {
+        ShortenedUrlModel(
+            id: remote.alias,
+            original: remote.links.original,
+            shortened: remote.links.shortened,
+            date: Date()
+        )
+    }
+
+    func insertUnique(_ model: ShortenedUrlModel) {
+        urlList = urlList.filter { $0.id != model.id }
+        urlList.insert(model, at: 0)
+    }
+
+    func sortUrlList() {
+        urlList.sort { $0.date > $1.date }
+    }
+
+    func clipUrlListToHistoryLimitCount() {
+        if urlList.count > historyLimitCount {
+            _ = urlList.popLast()
         }
     }
 }
