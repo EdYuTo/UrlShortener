@@ -24,9 +24,9 @@ final class ShortenedListViewModelTests: XCTestCase {
         XCTAssertEqual(request.endpoint, "https://url-shortener-server.onrender.com/api/alias")
         EncodableHelpers.assertEqual(
             request.body,
-                """
-                   {"url": "\(url)"}
-                """.data(using: .utf8)
+            """
+               {"url": "\(url)"}
+            """.data(using: .utf8)
         )
         XCTAssertEqual(request.httpMethod, .post)
         XCTAssertNil(request.queryParams)
