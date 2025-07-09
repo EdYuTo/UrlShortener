@@ -61,8 +61,8 @@ final class ShortenedListViewModelTests: XCTestCase {
         networkProvider.add(.failure(error))
 
         sut.onUpdate = { state in
-            if state != .connectionError {
-                XCTFail("Should yield connection error")
+            if state != .error {
+                XCTFail("Should yield error")
             }
         }
 
@@ -78,7 +78,7 @@ final class ShortenedListViewModelTests: XCTestCase {
 
         sut.onUpdate = { state in
             if state != .error {
-                XCTFail("Should yield generic error")
+                XCTFail("Should yield error")
             }
         }
 
@@ -240,12 +240,12 @@ final class ShortenedListViewModelTests: XCTestCase {
             networkProvider.add(.failure(error))
 
             sut.onUpdate = { state in
-                if case let .connectionError(receivedModel) = state {
+                if case let .error(receivedModel) = state {
                     XCTAssertEqual(receivedModel.title, expectedModel.title)
                     XCTAssertEqual(receivedModel.description, expectedModel.description)
                     XCTAssertEqual(receivedModel.buttonTitle, expectedModel.buttonTitle)
                 } else {
-                    XCTFail("Should yield connection error")
+                    XCTFail("Should yield error")
                 }
             }
 
@@ -268,7 +268,7 @@ final class ShortenedListViewModelTests: XCTestCase {
                     XCTAssertEqual(receivedModel.description, expectedModel.description)
                     XCTAssertEqual(receivedModel.buttonTitle, expectedModel.buttonTitle)
                 } else {
-                    XCTFail("Should yield generic error")
+                    XCTFail("Should yield error")
                 }
             }
 

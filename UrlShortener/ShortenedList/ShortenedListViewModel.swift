@@ -62,7 +62,7 @@ extension ShortenedListViewModel: ShortenedListViewModelProtocol {
             } catch {
                 if let error = error as? NetworkError, case .connection = error {
                     await self.updateOnMainThread(
-                        .connectionError(connectionError())
+                        .error(connectionError())
                     )
                 } else {
                     await self.updateOnMainThread(

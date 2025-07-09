@@ -12,7 +12,6 @@ extension ShortenedListState: @retroactive Equatable {
     public static func == (lhs: ShortenedListState, rhs: ShortenedListState) -> Bool {
         switch (lhs, rhs) {
         case (.error, .error),
-            (.connectionError, .connectionError),
             (.loading, .loading),
             (.success, .success):
             return true
@@ -23,10 +22,6 @@ extension ShortenedListState: @retroactive Equatable {
 
     static var error: Self {
         .error(.init(title: "", buttonTitle: ""))
-    }
-
-    static var connectionError: Self {
-        .connectionError(.init(title: "", buttonTitle: ""))
     }
 }
 
