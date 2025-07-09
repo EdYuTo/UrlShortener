@@ -20,6 +20,7 @@ protocol ShortenedListViewModelProtocol: AnyObject {
     var onUpdate: Observer<ShortenedListState>? { get set }
     var urlList: [ShortenedUrlModel] { get }
     var historyLimitCount: Int { get }
+    var viewTitle: String { get }
 }
 
 final class ShortenedListViewModel {
@@ -29,6 +30,9 @@ final class ShortenedListViewModel {
     var onUpdate: Observer<ShortenedListState>?
     var urlList: [ShortenedUrlModel] = []
     var historyLimitCount: Int
+    var viewTitle: String {
+        Localizable.shortenedListTitle.localized
+    }
 
     init(
         cacheProvider: CacheProviderProtocol,

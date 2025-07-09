@@ -214,6 +214,27 @@ final class ShortenedListViewModelTests: XCTestCase {
             XCTFail("Should've saved remote model to cache")
         }
     }
+
+    // MARK: - Localization
+    func testTitleLocalization() {
+        let (sut, _, _) = makeSut()
+
+        let expectedTitle = [
+            "en": "Recently shortened URLs",
+            "pt-BR": "URLs encurtadas recentemente"
+        ]
+
+        let bundle = Bundle(for: UrlShortener.self)
+        addTeardownBlock {
+            bundle.unsetLocalizedLanguage()
+        }
+
+        for (language, expectedTitle) in expectedTitle {
+            bundle.setLocalizedLanguage(to: language)
+            let title = sut.viewTitle
+            XCTAssertEqual(title, expectedTitle, "Expected \(title) to be \(expectedTitle) in \(language)")
+        }
+    }
 }
 
 // MARK: - Helpers
