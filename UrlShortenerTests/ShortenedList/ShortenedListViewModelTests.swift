@@ -216,23 +216,63 @@ final class ShortenedListViewModelTests: XCTestCase {
     }
 
     // MARK: - Localization
-    func testTitleLocalization() {
+    func testTitleLocalization() async {
         let (sut, _, _) = makeSut()
 
-        let expectedTitle = [
+        let expectedTitleList = [
             "en": "Recently shortened URLs",
             "pt-BR": "URLs encurtadas recentemente"
         ]
 
-        let bundle = Bundle(for: UrlShortener.self)
-        addTeardownBlock {
-            bundle.unsetLocalizedLanguage()
-        }
-
-        for (language, expectedTitle) in expectedTitle {
-            bundle.setLocalizedLanguage(to: language)
+        await validateLocalization(expectedTitleList) { expectedTitle, language in
             let title = sut.viewTitle
             XCTAssertEqual(title, expectedTitle, "Expected \(title) to be \(expectedTitle) in \(language)")
+        }
+    }
+
+    func testShortenUrlFailsWithConnectionErrorLocalized() async {
+        let url = "https://www.linkedin.com/in/edyuto/"
+        let error = NetworkError.connection
+
+        let (sut, _, networkProvider) = makeSut()
+
+        await validateLocalization(getLocalizedConnectionErrorModels()) { expectedModel, language in
+            networkProvider.add(.failure(error))
+
+            sut.onUpdate = { state in
+                if case let .connectionError(receivedModel) = state {
+                    XCTAssertEqual(receivedModel.title, expectedModel.title)
+                    XCTAssertEqual(receivedModel.description, expectedModel.description)
+                    XCTAssertEqual(receivedModel.buttonTitle, expectedModel.buttonTitle)
+                } else {
+                    XCTFail("Should yield connection error")
+                }
+            }
+
+            await sut.shorten(url).value
+        }
+    }
+
+    func testShortenUrlFailsWithGenericErrorLocalized() async {
+        let url = "https://www.linkedin.com/in/edyuto/"
+        let error = NSError(domain: "Generic", code: 500)
+
+        let (sut, _, networkProvider) = makeSut()
+
+        await validateLocalization(getLocalizedGenericErrorModels()) { expectedModel, language in
+            networkProvider.add(.failure(error))
+
+            sut.onUpdate = { state in
+                if case let .error(receivedModel) = state {
+                    XCTAssertEqual(receivedModel.title, expectedModel.title)
+                    XCTAssertEqual(receivedModel.description, expectedModel.description)
+                    XCTAssertEqual(receivedModel.buttonTitle, expectedModel.buttonTitle)
+                } else {
+                    XCTFail("Should yield generic error")
+                }
+            }
+
+            await sut.shorten(url).value
         }
     }
 }
@@ -281,5 +321,48 @@ private extension ShortenedListViewModelTests {
             shortened: "https://url-shortener-server.onrender.com/api/alias/1544093959",
             date: Date()
         )
+    }
+
+    func validateLocalization<T>(
+        _ fields: [String: T],
+        with validation: (T, String) async -> Void
+    ) async {
+        let bundle = Bundle(for: UrlShortener.self)
+        addTeardownBlock {
+            bundle.unsetLocalizedLanguage()
+        }
+
+        for (language, expectedField) in fields {
+            bundle.setLocalizedLanguage(to: language)
+            await validation(expectedField, language)
+        }
+    }
+
+    func getLocalizedConnectionErrorModels() -> [String: AlertModel] {
+        [
+            "en": AlertModel(
+                title: "Connection error",
+                description: "Something went wrong, check your internet connection and try again",
+                buttonTitle: "Retry"
+            ),
+            "pt-BR": AlertModel(
+                title: "Erro de conexão",
+                description: "Não podemos conectar ao servidor, cheque sua internet e tente novamente",
+                buttonTitle: "Tentar novamente"
+            )
+        ]
+    }
+
+    func getLocalizedGenericErrorModels() -> [String: AlertModel] {
+        [
+            "en": AlertModel(
+                title: "Something went wrong",
+                buttonTitle: "Retry"
+            ),
+            "pt-BR": AlertModel(
+                title: "Algo deu errado",
+                buttonTitle: "Tentar novamente"
+            )
+        ]
     }
 }

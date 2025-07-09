@@ -61,9 +61,13 @@ extension ShortenedListViewModel: ShortenedListViewModelProtocol {
                 await self.updateOnMainThread(.success)
             } catch {
                 if let error = error as? NetworkError, case .connection = error {
-                    await self.updateOnMainThread(.connectionError)
+                    await self.updateOnMainThread(
+                        .connectionError(connectionError())
+                    )
                 } else {
-                    await self.updateOnMainThread(.error)
+                    await self.updateOnMainThread(
+                        .error(genericError())
+                    )
                 }
             }
         }
@@ -136,5 +140,20 @@ private extension ShortenedListViewModel {
     func saveUrlListToCache() async {
         let cacheList = urlList.map { mapDomainToCache($0) }
         try? await cacheProvider.set(key: ShortenedUrlStorage.key, value: cacheList)
+    }
+
+    func connectionError() -> AlertModel {
+        AlertModel(
+            title: Localizable.connectionErrorTitle.localized,
+            description: Localizable.connectionErrorDescription.localized,
+            buttonTitle: Localizable.connectionErrorButtonTitle.localized
+        )
+    }
+
+    func genericError() -> AlertModel {
+        AlertModel(
+            title: Localizable.genericErrorTitle.localized,
+            buttonTitle: Localizable.genericErrorButtonTitle.localized
+        )
     }
 }

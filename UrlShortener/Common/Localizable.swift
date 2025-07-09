@@ -10,6 +10,11 @@ import Foundation
 // MARK: - Keys
 enum Localizable: String {
     case shortenedListTitle
+    case connectionErrorTitle
+    case connectionErrorDescription
+    case connectionErrorButtonTitle
+    case genericErrorTitle
+    case genericErrorButtonTitle
 }
 
 // MARK: - Bundle locator

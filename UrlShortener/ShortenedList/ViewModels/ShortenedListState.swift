@@ -6,8 +6,8 @@
 //
 
 enum ShortenedListState {
-    case error
-    case connectionError
+    case error(AlertModel)
+    case connectionError(AlertModel)
     case loading
     case success
 }
