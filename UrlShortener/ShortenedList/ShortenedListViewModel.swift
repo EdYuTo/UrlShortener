@@ -17,6 +17,7 @@ protocol ShortenedListViewModelProtocol: AnyObject {
     func loadHistory() -> Task<Void, Never>
 
     var onUpdate: Observer<ShortenedListState>? { get set }
+    var urlList: [ShortenedUrlModel] { get }
 }
 
 final class ShortenedListViewModel {
@@ -24,6 +25,7 @@ final class ShortenedListViewModel {
     private let networkProvider: NetworkProviderProtocol
 
     var onUpdate: Observer<ShortenedListState>?
+    var urlList: [ShortenedUrlModel] = []
 
     init(
         cacheProvider: CacheProviderProtocol,
@@ -45,7 +47,7 @@ extension ShortenedListViewModel: ShortenedListViewModelProtocol {
                 let response: NetworkResponse<ShortenUrlResponse> = try await networkProvider.makeRequest(request)
                 await self.updateOnMainThread(.success)
             } catch {
-                if let error = error as? NetworkError, case .connectionError = error {
+                if let error = error as? NetworkError, case .connection = error {
                     await self.updateOnMainThread(.connectionError)
                 } else {
                     await self.updateOnMainThread(.error)
