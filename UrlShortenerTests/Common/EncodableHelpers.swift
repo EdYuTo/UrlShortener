@@ -21,7 +21,7 @@ extension EncodableHelpers {
         if let data = object as? NSDictionary {
             return data
         }
-        throw HelperError(errorDescription: "Invalid JSON format")
+        throw HelperError.invalidJson
     }
 }
 
@@ -31,35 +31,48 @@ extension EncodableHelpers {
         _ lhs: T,
         _ rhs: U
     ) throws -> Bool {
-        try isEqual(try toData(lhs), try toData(rhs))
+        let lhsData: Data = try toData(lhs)
+        let rhData: Data = try toData(rhs)
+        return try isEqual(data: lhsData, data: rhData)
     }
 
     static func isEqual<T: Encodable>(
         _ lhs: Data?,
         _ rhs: T
     ) throws -> Bool {
-        try isEqual(lhs, toData(rhs))
+        let rhsData: Data = try toData(rhs)
+        return try isEqual(data: lhs, data: rhsData)
     }
 
     static func isEqual<T: Encodable>(
         _ lhs: T,
         _ rhs: Data?,
     ) throws -> Bool {
-        try isEqual(toData(lhs), rhs)
+        let lhsData: Data = try toData(lhs)
+        return try isEqual(data: lhsData, data: rhs)
     }
 
     static func isEqual(
-        _ lhs: Data?,
-        _ rhs: Data?
+        data lhs: Data?,
+        data rhs: Data?
     ) throws -> Bool {
         switch (lhs, rhs) {
         case (.none, .none):
             return true
         case let (.some(lhsData), .some(rhsData)):
-            let lhs = try toDictionary(lhsData)
-            let rhs = try toDictionary(rhsData)
-            try validateKeys(lhs, rhs)
-            return true
+            do {
+                let lhs = try toDictionary(lhsData)
+                let rhs = try toDictionary(rhsData)
+                try validateKeys(lhs, rhs)
+                return true
+            } catch {
+                if let error = error as? HelperError, case .invalidJson = error {
+                    let lhs = String(data: lhsData, encoding: .utf8)
+                    let rhs = String(data: rhsData, encoding: .utf8)
+                    return lhs == rhs
+                }
+                throw error
+            }
         default:
             return false
         }
@@ -101,7 +114,7 @@ extension EncodableHelpers {
         file: StaticString = #file,
         line: UInt = #line
     ) {
-        assertEqual(try isEqual(lhs, rhs), file: file, line: line)
+        assertEqual(try isEqual(data: lhs, data: rhs), file: file, line: line)
     }
 
     static func assertEqual(
@@ -121,8 +134,21 @@ extension EncodableHelpers {
 
 // MARK: - Helpers
 private extension EncodableHelpers {
-    struct HelperError: LocalizedError {
-        let errorDescription: String?
+    enum HelperError: LocalizedError {
+        case invalidJson
+        case invalidData(forKey: String)
+        case missingKey(String)
+
+        var errorDescription: String? {
+            switch self {
+            case .invalidJson:
+                "Invalid Json format"
+            case let .invalidData(forKey: key):
+                "Data for key <\(key)> is different"
+            case let .missingKey(key):
+                "Missing key <\(key)>"
+            }
+        }
     }
 
     static func validateKeys(_ lhs: NSDictionary, _ rhs: NSDictionary, path: String = "") throws {
@@ -138,10 +164,10 @@ private extension EncodableHelpers {
             case let (lhs as NSDictionary, rhs as NSDictionary):
                 try validateKeys(lhs, rhs, path: currentPath)
             case (.none, _), (_, .none):
-                throw HelperError(errorDescription: "Missing key <\(currentPath)>")
+                throw HelperError.missingKey(currentPath)
             default:
                 if "\(String(describing: lhsData))" != "\(String(describing: rhsData))" {
-                    throw HelperError(errorDescription: "Data for key <\(currentPath)> is different")
+                    throw HelperError.invalidData(forKey: currentPath)
                 }
             }
         }
