@@ -45,8 +45,8 @@ final class ShortenedListViewModelTests: XCTestCase {
         networkProvider.add(.success(response))
 
         sut.onUpdate = { state in
-            if state != .success {
-                XCTFail("Should yield success")
+            if ![.success, .loading].contains(state) {
+                XCTFail("Should yield success but had \(state)")
             }
         }
 
@@ -61,8 +61,8 @@ final class ShortenedListViewModelTests: XCTestCase {
         networkProvider.add(.failure(error))
 
         sut.onUpdate = { state in
-            if state != .error {
-                XCTFail("Should yield error")
+            if ![.error, .loading].contains(state) {
+                XCTFail("Should yield error but had \(state)")
             }
         }
 
@@ -77,7 +77,7 @@ final class ShortenedListViewModelTests: XCTestCase {
         networkProvider.add(.failure(error))
 
         sut.onUpdate = { state in
-            if state != .error {
+            if ![.error, .loading].contains(state) {
                 XCTFail("Should yield error")
             }
         }
@@ -196,8 +196,8 @@ final class ShortenedListViewModelTests: XCTestCase {
         networkProvider.add(.success(response))
 
         sut.onUpdate = { state in
-            if state != .success {
-                XCTFail("Should yield success")
+            if ![.success, .loading].contains(state) {
+                XCTFail("Should yield success but had \(state)")
             }
         }
 
@@ -244,8 +244,8 @@ final class ShortenedListViewModelTests: XCTestCase {
                     XCTAssertEqual(receivedModel.title, expectedModel.title)
                     XCTAssertEqual(receivedModel.description, expectedModel.description)
                     XCTAssertEqual(receivedModel.buttonTitle, expectedModel.buttonTitle)
-                } else {
-                    XCTFail("Should yield error")
+                } else if state != .loading {
+                    XCTFail("Should yield error but had \(state)")
                 }
             }
 
@@ -267,8 +267,8 @@ final class ShortenedListViewModelTests: XCTestCase {
                     XCTAssertEqual(receivedModel.title, expectedModel.title)
                     XCTAssertEqual(receivedModel.description, expectedModel.description)
                     XCTAssertEqual(receivedModel.buttonTitle, expectedModel.buttonTitle)
-                } else {
-                    XCTFail("Should yield error")
+                } else if state != .loading {
+                    XCTFail("Should yield error but had \(state)")
                 }
             }
 

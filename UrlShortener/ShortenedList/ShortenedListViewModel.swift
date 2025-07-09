@@ -52,6 +52,9 @@ extension ShortenedListViewModel: ShortenedListViewModelProtocol {
         let request = ShortenUrlRequest(url: url)
         return Task { [weak self] in
             guard let self else { return }
+            await self.updateOnMainThread(
+                .loading
+            )
             do {
                 let response: NetworkResponse<ShortenUrlResponse> = try await networkProvider.makeRequest(request)
                 // Ideally we could use a NSOrderedSet for bigger datasets
