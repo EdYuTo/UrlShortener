@@ -16,7 +16,11 @@ class AsyncCompletion {
         }
         switch completionList.removeFirst() {
         case let .success(value):
-            return value as! T
+            if let value = value as? T {
+                return value
+            } else {
+                throw NSError(domain: "Cannot cast \(value) to \(type)", code: 500)
+            }
         case let .failure(error):
             throw error
         }
