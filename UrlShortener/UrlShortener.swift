@@ -23,7 +23,11 @@ final class UrlShortener: UIResponder, UIApplicationDelegate {
         let cacheProvider = CacheProvider(storagePath: cacheDirectory())
         let cacheDebugDecorator = CacheDebugDecorator(provider: cacheProvider)
 
-        let viewController = UIViewController()
+        let viewModel = ShortenedListViewModel(
+            cacheProvider: cacheDebugDecorator,
+            networkProvider: networkDebugDecorator
+        )
+        let viewController = ShortenedListViewController(viewModel: viewModel)
 
         let navigationController = UINavigationController(rootViewController: viewController)
 

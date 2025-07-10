@@ -15,6 +15,8 @@ enum Localizable: String {
     case connectionErrorButtonTitle
     case genericErrorTitle
     case genericErrorButtonTitle
+    case originalUrlAlertTitle
+    case originalUrlAlertButtonTitle
 }
 
 // MARK: - Bundle locator
