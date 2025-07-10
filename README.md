@@ -43,5 +43,18 @@ Then run fastlane to create the project:
 bundle exec fastlane generate_project
 ```
 
-## TBD
-Update as you please
+## About the project
+The project uses `https://url-shortener-server.onrender.com/api/alias` api to shorten url.
+
+The architecture is based in a MVVM implementation and everything was developed usind a TDD approach (check commit history).
+
+There is only one screen for calling the api.
+
+There are 3 submodules with their own configuration files, ideally they should have their own actions and lanes for testing. 
+But for now they're integrated as subprojects within the main xcodeproj.
+
+## Useful links
+* Url shortener: https://gooly.onrender.com/
+* My template for setting up projects: https://github.com/EdYuTo/iOSProjectSetup/tree/fastlane
+* App icon generator: https://www.appicon.co/
+* Git repo: https://github.com/EdYuTo/UrlShortener
