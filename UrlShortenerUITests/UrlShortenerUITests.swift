@@ -8,34 +8,57 @@
 import XCTest
 
 final class UrlShortenerUITests: XCTestCase {
-
-    override func setUpWithError() throws {
-        // Put setup code here. This method is called before the invocation of each test method in the class.
-
-        // In UI tests it is usually best to stop immediately when a failure occurs.
-        continueAfterFailure = false
-
-        // In UI tests it’s important to set the initial state - such as interface orientation - required for your tests before they run. The setUp method is a good place to do this.
-    }
-
-    override func tearDownWithError() throws {
-        // Put teardown code here. This method is called after the invocation of each test method in the class.
-    }
-
-    func testExample() throws {
-        // UI tests must launch the application that they test.
-        let app = XCUIApplication()
-        app.launch()
-
-        // Use XCTAssert and related functions to verify your tests produce the correct results.
-    }
-
     func testLaunchPerformance() throws {
         if #available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 7.0, *) {
-            // This measures how long it takes to launch your application.
             measure(metrics: [XCTApplicationLaunchMetric()]) {
-                XCUIApplication().launch()
+                let app = XCUIApplication()
+                app.launchArguments += ["-disable-cache"]
+                app.launch()
             }
         }
+    }
+
+    func testLaunch() throws {
+        let app = XCUIApplication()
+        app.launchArguments += ["-disable-cache"]
+        app.launch()
+
+        UIPasteboard.general.string = "https://www.linkedin.com/in/edyuto/"
+
+        let textField = app.textFields["https://www.linkedin.com/in/edyuto/"].firstMatch
+        textField.tap()
+        textField.press(forDuration: 1.2)
+
+        let pasteBoard = app.staticTexts["Paste"].firstMatch
+        pasteBoard.tap()
+
+        app.buttons.element(boundBy: 5).tap()
+        app.staticTexts["https://url-shortener-server.onrender.com/api/alias/1544093959"].firstMatch.tap()
+
+        let alertConfirmButton = app.buttons["Ok"].firstMatch
+        alertConfirmButton.tap()
+
+        let textFieldClearButton = app.buttons["Clear text"].firstMatch
+        textFieldClearButton.tap()
+
+        UIPasteboard.general.string = "https://github.com/EdYuTo"
+        textField.press(forDuration: 0.9)
+        pasteBoard.tap()
+
+        let keyboardEnterKey = app.buttons["Return"].firstMatch
+        keyboardEnterKey.tap()
+
+        app.staticTexts["https://url-shortener-server.onrender.com/api/alias/1341138848"].firstMatch.tap()
+        alertConfirmButton.tap()
+        app.textFields["https://github.com/EdYuTo"].firstMatch.tap()
+
+        textFieldClearButton.tap()
+        textField.press(forDuration: 1.0)
+
+        UIPasteboard.general.string = "https://stackoverflow.com/users/12585616/edyuto"
+        pasteBoard.tap()
+        keyboardEnterKey.tap()
+        app.staticTexts["https://url-shortener-server.onrender.com/api/alias/1066423859"].firstMatch.tap()
+        alertConfirmButton.tap()
     }
 }
