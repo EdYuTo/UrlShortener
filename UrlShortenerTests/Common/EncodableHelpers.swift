@@ -46,7 +46,7 @@ extension EncodableHelpers {
 
     static func isEqual<T: Encodable>(
         _ lhs: T,
-        _ rhs: Data?,
+        _ rhs: Data?
     ) throws -> Bool {
         let lhsData: Data = try toData(lhs)
         return try isEqual(data: lhsData, data: rhs)
